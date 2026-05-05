@@ -1,18 +1,6 @@
 #include <unistd.h>
 #include <stdio.h>
-#include <float.h>
-
-void	print_arry(unsigned int *arr, int n) {
-	int i;
-
-	i = 0;
-	while (i < n) {
-		printf("%u", arr[i]);
-		i++;
-	}
-	printf("\n");
-}
-	
+#include <stdlib.h>
 
 int	get_decimal_value(int i) {
 	int value;
@@ -71,65 +59,87 @@ double	get_mantissa_value(int top_value, unsigned int *bits) {
 	return (value);
 }
 
-void	print_64bit_binary(void *ptr, size_t size) {
+unsigned int	*convert_to_binary(void *ptr, size_t size) {
+	ssize_t i;
+	int16_t j;
+	uint32_t l;
+	unsigned char *holder;
+	unsigned int *res;
+
+	holder = (unsigned char *)ptr;
+	res = (unsigned int *)malloc(sizeof(unsigned int) * 65);	
+	i = size - 1;
+	j = 7;
+	l = 0;
+	while (i >= 0) {
+		j = 7;
+		while (j >= 0) {
+			res[l++] = (holder[i] >> j--) & 1 ? 1 : 0;
+		}
+		i--;
+	}
+	res[l] = '\0';
+	return(res);
+}
+
+double	get_sign(unsigned int *binary) {
+	if (binary[0] == 0)
+		return (1.0);
+	else
+		return (-1.0);
+}
+
+double IEEE_754_MATH(unsigned int *exp, unsigned int *mantissa) {
+	int exp_value;
+	double mantissa_value;
+	int decimal_value_of_exp;
+	double final_val;
+	int d_bais;
+
+	d_bais = 1023;
+	exp_value = get_exp_value(10, exp, d_bais);
+	mantissa_value = get_mantissa_value(51, mantissa);
+	decimal_value_of_exp =  get_decimal_value(exp_value);
+	final_val = (1 + mantissa_value) * (double)decimal_value_of_exp;
+	free(exp);
+	free(mantissa);
+	return(final_val);
+
+}
+
+double	IEEE_754(unsigned int *binary) {
+	unsigned int *exp;
+	unsigned int *mantissa;
 	int i;
-	int j;
-	int bit_pos;
-	unsigned char bit;
-	unsigned char *b;
-	int sign;
-	unsigned int exp[12];
-	unsigned int mantissa[60];
 	int k;
 	int l;
 
 	
 	k = 0;
 	l = 0;
-	b = (unsigned char *)ptr;
-	i = size - 1;
-	j = 7;
-	while (i >= 0) {
-		j = 7;
-		while (j >= 0) {
-			bit_pos = (i * 8) + j;
-			bit = (b[i] >> j) & 1;
-			if (bit_pos == 63)
-				sign = bit;
-			if (bit_pos <= 62 && bit_pos > 51) 
-				exp[k++] = bit;
-			if (bit_pos <= 51) 
-				mantissa[l++] = bit;
-			printf("%u", bit);
-			if (bit_pos == 63 || bit_pos == 52)
-				printf(" ");
-			j--;
-		}
-		i--;
+	i = 0;
+	exp = (unsigned int *)malloc(sizeof(unsigned int) * 12);
+	mantissa = (unsigned int *)malloc(sizeof(unsigned int) * 60);
+	while (i < 64) {
+		if (i >= 1 && i < 12) 
+			exp[k++] = binary[i];
+		if (i >= 12) 
+			mantissa[l++] = binary[i];
+		i++;
 	}
-
-
-	int exp_value;
-	double mantissa_value;
-	int decimal_value_of_exp;
-
-	exp_value = get_exp_value(10, exp, 1023);
-	mantissa_value = get_mantissa_value(51, mantissa);
-	decimal_value_of_exp =  get_decimal_value(exp_value);
-
-	double final_val;
-	
-	final_val = (1 + mantissa_value) * (double)decimal_value_of_exp;
-	printf(" -> IEEE 754: -> %f\n", final_val);
+	return (IEEE_754_MATH(exp, mantissa) * get_sign(binary));
 }
 
 int	main() {
 	double value;
-	int d_bias = 1023;
+	double converted_value;
+	unsigned int *binary;
 
-	value = 123.956948;
+	value = -123.956948;
+	binary = convert_to_binary(&value, sizeof(value));
+	converted_value = IEEE_754(binary);
 
-	//IEEE 754
-	print_64bit_binary(&value, sizeof(value));
+	printf(" converted_value: %f\n", converted_value);
+	free(binary);
 	return (0);
 }
