@@ -1,5 +1,4 @@
 #include <unistd.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 int	get_decimal_value(int i) {
