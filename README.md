@@ -1,52 +1,92 @@
-# IEEE‑754 Double‑Precision Decoder in C
+# IEEE‑754 Double‑Precision Decoder (Mathematical Reconstruction in C)
 
-This project implements a manual decoder for **IEEE‑754 double‑precision (64‑bit) floating‑point numbers** using pure C.  
-Instead of relying on unions or bit‑fields, the program extracts bits manually, reconstructs the sign, exponent, and mantissa, and computes the final floating‑point value mathematically.
+This project implements the **mathematical reconstruction** of a 64‑bit IEEE‑754 double‑precision floating‑point number from its raw bit fields.  
+It assumes you already have a 64‑element array of `unsigned int` bits (0 or 1), and it decodes:
 
-The goal is educational: to show how a `double` is represented internally and how its value is computed from raw binary.
+- The **sign bit**
+- The **11‑bit exponent**
+- The **52‑bit mantissa (fraction)**
+- The final floating‑point value using the IEEE‑754 formula
 
----
-
-## Overview
-
-A 64‑bit IEEE‑754 floating‑point number is structured as:
-
-- **1 bit** — Sign  
-- **11 bits** — Exponent (biased by 1023)  
-- **52 bits** — Fraction (mantissa)
-
-This program:
-
-1. Converts a `double` into a 64‑bit binary array  
-2. Extracts the sign bit  
-3. Extracts and decodes the exponent  
-4. Extracts and reconstructs the mantissa  
-5. Computes the final floating‑point value using the IEEE‑754 formula
+This implementation is educational and demonstrates how a `double` is computed internally without relying on unions, bit‑fields, or compiler‑specific behavior.
 
 ---
 
-## File Purpose
+## IEEE‑754 Double Format (64‑bit)
 
-The provided C file contains:
+A double‑precision floating‑point number is structured as:
 
-### ✔ Bit extraction  
-`convert_to_binary()` converts any memory region into an array of `0` and `1` bits (MSB first).
+| Field     | Bits | Description |
+|-----------|------|-------------|
+| Sign      | 1    | 0 = positive, 1 = negative |
+| Exponent  | 11   | Biased by 1023 |
+| Mantissa  | 52   | Fractional part |
 
-### ✔ Exponent decoding  
-`get_exp_value()` reconstructs the exponent field and subtracts the IEEE‑754 bias (1023).
+The value is computed as:
 
-### ✔ Mantissa decoding  
-`get_mantissa_value()` computes the fractional part by summing powers of 2⁻ⁿ.
+value = sign × (1 + mantissa) × 2^(exponent - 1023)
 
-### ✔ Sign extraction  
-`get_sign()` returns `+1.0` or `-1.0` depending on the sign bit.
 
-### ✔ Final IEEE‑754 reconstruction  
-`IEEE_754()` splits the 64‑bit array into:
+---
+
+## What This Code Does
+
+### ✔ Extracts the exponent  
+`get_exp_value()` converts the 11 exponent bits into an integer and subtracts the IEEE‑754 bias (1023).
+
+### ✔ Computes the mantissa  
+`get_mantissa_value()` sums powers of 2⁻ⁿ for each mantissa bit that is set to 1.
+
+### ✔ Determines the sign  
+`get_sign()` returns `+1.0` or `-1.0`.
+
+### ✔ Reconstructs the final floating‑point value  
+`IEEE_754()` splits the 64‑bit array into exponent and mantissa fields, then calls:
+
+IEEE_754_MATH(exp, mantissa)
+
+
+which performs the full IEEE‑754 calculation.
+
+---
+
+## Function Breakdown
+
+### `get_decimal_value(i)`
+Computes \(2^i\).  
+Used for exponent reconstruction.
+
+### `get_exp_value(top_value, bits, bias)`
+Converts the exponent bit array into an integer and subtracts the IEEE‑754 bias.
+
+### `get_mantissa_bit_value(i)`
+Returns the value of the mantissa bit at position `i`
+
+### `get_mantissa_value(top_value, bits)`
+Sums all mantissa bit contributions.
+
+### `get_sign(binary)`
+Returns `1.0` or `-1.0` based on the first bit.
+
+### `IEEE_754_MATH(exp, mantissa)`
+Computes: (1 + mantissa) × 2^(exponent)
+
+### `IEEE_754(binary)`
+Splits the 64‑bit array into:
+
 - 1 sign bit  
 - 11 exponent bits  
 - 52 mantissa bits  
 
-Then `IEEE_754_MATH()` computes:
+Then reconstructs the final value.
 
-value = sign × (1 + mantissa) × 2^(exponent)
+---
+
+## Example Usage
+
+This version of the code expects a 64‑bit array of bits:
+
+```c
+unsigned int binary[64] = { /* 0s and 1s representing a double */ };
+
+double result = IEEE_754(binary);
