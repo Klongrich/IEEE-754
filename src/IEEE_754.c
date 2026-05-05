@@ -59,29 +59,6 @@ double	get_mantissa_value(int top_value, unsigned int *bits) {
 	return (value);
 }
 
-unsigned int	*convert_to_binary(void *ptr, size_t size) {
-	ssize_t i;
-	int16_t j;
-	uint32_t l;
-	unsigned char *holder;
-	unsigned int *res;
-
-	holder = (unsigned char *)ptr;
-	res = (unsigned int *)malloc(sizeof(unsigned int) * 65);	
-	i = size - 1;
-	j = 7;
-	l = 0;
-	while (i >= 0) {
-		j = 7;
-		while (j >= 0) {
-			res[l++] = (holder[i] >> j--) & 1 ? 1 : 0;
-		}
-		i--;
-	}
-	res[l] = '\0';
-	return(res);
-}
-
 double	get_sign(unsigned int *binary) {
 	if (binary[0] == 0)
 		return (1.0);
@@ -128,18 +105,4 @@ double	IEEE_754(unsigned int *binary) {
 		i++;
 	}
 	return (IEEE_754_MATH(exp, mantissa) * get_sign(binary));
-}
-
-int	main() {
-	double value;
-	double converted_value;
-	unsigned int *binary;
-
-	value = -123.956948;
-	binary = convert_to_binary(&value, sizeof(value));
-	converted_value = IEEE_754(binary);
-
-	printf(" converted_value: %f\n", converted_value);
-	free(binary);
-	return (0);
 }
